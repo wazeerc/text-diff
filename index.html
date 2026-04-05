@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Diff</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: #fff;
+      color: #000;
+      min-height: 100vh;
+      border: 4px solid #000;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      background: #000;
+      color: #fff;
+      border-bottom: 4px solid #000;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: 3px solid #fff;
+      background: #000;
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .btn:hover {
+      background: #fff;
+      color: #000;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .input-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 4px solid #000;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      border-right: 4px solid #000;
+    }
+
+    .input-group:last-child {
+      border-right: none;
+    }
+
+    .input-group label {
+      padding: 16px 24px;
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      background: #000;
+      color: #fff;
+      border-bottom: 3px solid #000;
+    }
+
+    .input-group textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 20px;
+      border: none;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: vertical;
+      background: #fff;
+    }
+
+    .input-group textarea:focus {
+      outline: none;
+      background: #f0f0f0;
+    }
+
+    .input-group textarea::placeholder {
+      color: #999;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 24px;
+      background: #000;
+      color: #fff;
+      border-bottom: 4px solid #000;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-add {
+      color: #00ff00;
+    }
+
+    .status-del {
+      color: #ff4444;
+    }
+
+    .status-changed {
+      color: #ffaa00;
+    }
+
+    .diff-container {
+      display: none;
+      border-bottom: 4px solid #000;
+    }
+
+    .diff-container.visible {
+      display: block;
+    }
+
+    .diff-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #000;
+      color: #fff;
+    }
+
+    .diff-header-cell {
+      padding: 16px 24px;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      border-right: 3px solid #fff;
+    }
+
+    .diff-header-cell:last-child {
+      border-right: none;
+    }
+
+    .diff-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-height: 600px;
+      overflow: auto;
+    }
+
+    .diff-panel {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow: auto;
+    }
+
+    .diff-panel:first-child {
+      border-right: 4px solid #000;
+    }
+
+    .diff-line {
+      display: flex;
+      min-height: 26px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .line-number {
+      width: 60px;
+      padding: 0 12px;
+      text-align: right;
+      color: #666;
+      background: #f5f5f5;
+      border-right: 3px solid #000;
+      flex-shrink: 0;
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .line-content {
+      flex: 1;
+      padding: 0 16px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .diff-line.added {
+      background: #b8ffb8;
+    }
+
+    .diff-line.added .line-number {
+      background: #90ee90;
+      color: #006400;
+    }
+
+    .diff-line.deleted {
+      background: #ffb8b8;
+    }
+
+    .diff-line.deleted .line-number {
+      background: #ff9090;
+      color: #8b0000;
+    }
+
+    .diff-line.empty {
+      background: #f0f0f0;
+    }
+
+    .diff-line.empty .line-content {
+      background: #f0f0f0;
+    }
+
+    .word-added {
+      background: #00dd00;
+      color: #000;
+      font-weight: 700;
+      padding: 0 2px;
+    }
+
+    .word-removed {
+      background: #dd0000;
+      color: #fff;
+      font-weight: 700;
+      text-decoration: line-through;
+      padding: 0 2px;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+      border-bottom: 4px solid #000;
+    }
+
+    .empty-state-icon {
+      font-size: 72px;
+      margin-bottom: 24px;
+      font-weight: 900;
+    }
+
+    .empty-state-text {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+    }
+
+    .keyboard-hint {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    @media (max-width: 900px) {
+      .input-section {
+        grid-template-columns: 1fr;
+      }
+
+      .input-group {
+        border-right: none;
+        border-bottom: 4px solid #000;
+      }
+
+      .diff-body {
+        grid-template-columns: 1fr;
+      }
+
+      .diff-panel:first-child {
+        border-right: none;
+        border-bottom: 4px solid #000;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Text Diff</h1>
+      <div class="header-actions">
+        <button class="btn" id="clearBtn">Clear</button>
+      </div>
+    </header>
+
+    <section class="input-section">
+      <div class="input-group">
+        <label for="original">Original</label>
+        <textarea id="original" placeholder="Paste original text..."></textarea>
+      </div>
+      <div class="input-group">
+        <label for="modified">Modified</label>
+        <textarea id="modified" placeholder="Paste modified text..."></textarea>
+      </div>
+    </section>
+
+    <div class="status-bar" id="statusBar">
+      <div class="status-item">
+        <span class="status-add" id="addedCount">+0</span>
+        <span>/</span>
+        <span class="status-del" id="deletedCount">-0</span>
+        <span>/</span>
+        <span class="status-changed" id="changedCount">~0</span>
+      </div>
+    </div>
+
+    <div class="diff-container" id="diffContainer">
+      <div class="diff-header">
+        <div class="diff-header-cell">Original</div>
+        <div class="diff-header-cell">Modified</div>
+      </div>
+      <div class="diff-body" id="diffBody">
+        <div class="diff-panel" id="leftPanel"></div>
+        <div class="diff-panel" id="rightPanel"></div>
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-state-icon">[_]</div>
+      <div class="empty-state-text">Enter text to compare</div>
+      <div class="keyboard-hint">Changes compare automatically</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/diff@5.1.0/dist/diff.min.js"></script>
+  <script>
+    const originalTextarea = document.getElementById('original');
+    const modifiedTextarea = document.getElementById('modified');
+    const clearBtn = document.getElementById('clearBtn');
+    const diffContainer = document.getElementById('diffContainer');
+    const emptyState = document.getElementById('emptyState');
+    const leftPanel = document.getElementById('leftPanel');
+    const rightPanel = document.getElementById('rightPanel');
+    const addedCountEl = document.getElementById('addedCount');
+    const deletedCountEl = document.getElementById('deletedCount');
+    const changedCountEl = document.getElementById('changedCount');
+
+    let debounceTimer = null;
+    const DEBOUNCE_DELAY = 300;
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function renderWordDiff(oldLine, newLine) {
+      const diff = Diff.diffWords(oldLine, newLine);
+      const leftParts = [];
+      const rightParts = [];
+
+      diff.forEach(part => {
+        if (part.removed) {
+          leftParts.push(`<span class="word-removed">${escapeHtml(part.value)}</span>`);
+        } else if (part.added) {
+          rightParts.push(`<span class="word-added">${escapeHtml(part.value)}</span>`);
+        } else {
+          leftParts.push(`<span>${escapeHtml(part.value)}</span>`);
+          rightParts.push(`<span>${escapeHtml(part.value)}</span>`);
+        }
+      });
+
+      return { left: leftParts.join(''), right: rightParts.join('') };
+    }
+
+    function computeDiff(original, modified) {
+      const lineDiff = Diff.diffLines(original, modified);
+      const leftLines = [];
+      const rightLines = [];
+      let leftLineNum = 1;
+      let rightLineNum = 1;
+      let added = 0;
+      let deleted = 0;
+      let changed = 0;
+      let i = 0;
+
+      while (i < lineDiff.length) {
+        const part = lineDiff[i];
+
+        if (part.removed) {
+          const nextPart = lineDiff[i + 1];
+          const oldLines = part.value.split('\n').filter(l => l !== '');
+          const newLines = nextPart && nextPart.added ? nextPart.value.split('\n').filter(l => l !== '') : [];
+
+          const maxLen = Math.max(oldLines.length, newLines.length);
+
+          for (let j = 0; j < maxLen; j++) {
+            if (j < oldLines.length && j < newLines.length) {
+              const wordDiff = Diff.diffWords(oldLines[j], newLines[j]);
+              const wordChanges = wordDiff.filter(p => p.added || p.removed).length;
+              changed += wordChanges;
+              const { left, right } = renderWordDiff(oldLines[j], newLines[j]);
+              leftLines.push({ num: leftLineNum++, html: left, type: 'changed' });
+              rightLines.push({ num: rightLineNum++, html: right, type: 'changed' });
+            } else if (j < oldLines.length) {
+              leftLines.push({ num: leftLineNum++, html: `<span class="word-removed">${escapeHtml(oldLines[j])}</span>`, type: 'deleted' });
+              rightLines.push({ num: '', html: '', type: 'empty' });
+              deleted++;
+            } else {
+              leftLines.push({ num: '', html: '', type: 'empty' });
+              rightLines.push({ num: rightLineNum++, html: `<span class="word-added">${escapeHtml(newLines[j])}</span>`, type: 'added' });
+              added++;
+            }
+          }
+
+          if (nextPart && nextPart.added) {
+            i++;
+          }
+        } else if (part.added) {
+          const lines = part.value.split('\n').filter(l => l !== '');
+          lines.forEach(line => {
+            leftLines.push({ num: '', html: '', type: 'empty' });
+            rightLines.push({ num: rightLineNum++, html: `<span class="word-added">${escapeHtml(line)}</span>`, type: 'added' });
+            added++;
+          });
+        } else {
+          const lines = part.value.split('\n').filter(l => l !== '');
+          lines.forEach(line => {
+            leftLines.push({ num: leftLineNum++, html: escapeHtml(line), type: 'normal' });
+            rightLines.push({ num: rightLineNum++, html: escapeHtml(line), type: 'normal' });
+          });
+        }
+        i++;
+      }
+
+      return { leftLines, rightLines, added, deleted, changed };
+    }
+
+    function renderDiff(leftLines, rightLines, added, deleted, changed) {
+      leftPanel.innerHTML = leftLines.map(line => `
+        <div class="diff-line ${line.type}">
+          <span class="line-number">${line.num}</span>
+          <span class="line-content">${line.html}</span>
+        </div>
+      `).join('');
+
+      rightPanel.innerHTML = rightLines.map(line => `
+        <div class="diff-line ${line.type}">
+          <span class="line-number">${line.num}</span>
+          <span class="line-content">${line.html}</span>
+        </div>
+      `).join('');
+
+      addedCountEl.textContent = `+${added}`;
+      deletedCountEl.textContent = `-${deleted}`;
+      changedCountEl.textContent = `~${changed}`;
+    }
+
+    function compare() {
+      const original = originalTextarea.value;
+      const modified = modifiedTextarea.value;
+
+      if (!original && !modified) {
+        diffContainer.classList.remove('visible');
+        emptyState.style.display = 'flex';
+        addedCountEl.textContent = '+0';
+        deletedCountEl.textContent = '-0';
+        changedCountEl.textContent = '~0';
+        return;
+      }
+
+      const { leftLines, rightLines, added, deleted, changed } = computeDiff(original, modified);
+      renderDiff(leftLines, rightLines, added, deleted, changed);
+
+      emptyState.style.display = 'none';
+      diffContainer.classList.add('visible');
+    }
+
+    function debouncedCompare() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(compare, DEBOUNCE_DELAY);
+    }
+
+    function clear() {
+      originalTextarea.value = '';
+      modifiedTextarea.value = '';
+      diffContainer.classList.remove('visible');
+      emptyState.style.display = 'flex';
+      leftPanel.innerHTML = '';
+      rightPanel.innerHTML = '';
+      addedCountEl.textContent = '+0';
+      deletedCountEl.textContent = '-0';
+      changedCountEl.textContent = '~0';
+    }
+
+    function syncScroll(source, target) {
+      target.scrollTop = source.scrollTop;
+      target.scrollLeft = source.scrollLeft;
+    }
+
+    originalTextarea.addEventListener('input', debouncedCompare);
+    modifiedTextarea.addEventListener('input', debouncedCompare);
+    clearBtn.addEventListener('click', clear);
+
+    leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel));
+    rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel));
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        clearTimeout(debounceTimer);
+        compare();
+      }
+    });
+  </script>
+</body>
+</html>
