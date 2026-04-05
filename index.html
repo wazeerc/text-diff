@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
   <title>Text Diff</title>
   <style>
     * {
@@ -168,6 +169,10 @@
     }
 
     .diff-header-cell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       padding: 16px 24px;
       font-size: 12px;
       font-weight: 900;
@@ -178,6 +183,13 @@
 
     .diff-header-cell:last-child {
       border-right: none;
+    }
+
+    .preview-stats {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      white-space: nowrap;
     }
 
     .diff-body {
@@ -321,43 +333,63 @@
     <header>
       <h1>Text Diff</h1>
       <div class="header-actions">
-        <button class="btn" id="clearBtn">Clear</button>
+        <button class="btn"
+                id="clearBtn">Clear</button>
       </div>
     </header>
 
     <section class="input-section">
       <div class="input-group">
         <label for="original">Original</label>
-        <textarea id="original" placeholder="Paste original text..."></textarea>
+        <textarea id="original"
+                  placeholder="Paste original text..."></textarea>
       </div>
       <div class="input-group">
         <label for="modified">Modified</label>
-        <textarea id="modified" placeholder="Paste modified text..."></textarea>
+        <textarea id="modified"
+                  placeholder="Paste modified text..."></textarea>
       </div>
     </section>
 
-    <div class="status-bar" id="statusBar">
+    <div class="status-bar"
+         id="statusBar">
       <div class="status-item">
-        <span class="status-add" id="addedCount">+0</span>
+        <span class="status-add"
+              id="addedCount">+0</span>
         <span>/</span>
-        <span class="status-del" id="deletedCount">-0</span>
+        <span class="status-del"
+              id="deletedCount">-0</span>
         <span>/</span>
-        <span class="status-changed" id="changedCount">~0</span>
+        <span class="status-changed"
+              id="changedCount">~0</span>
       </div>
     </div>
 
-    <div class="diff-container" id="diffContainer">
+    <div class="diff-container"
+         id="diffContainer">
       <div class="diff-header">
-        <div class="diff-header-cell">Original</div>
-        <div class="diff-header-cell">Modified</div>
+        <div class="diff-header-cell">
+          <span>Original</span>
+          <span class="preview-stats"
+                id="originalStats">0 WORDS | 0 CHARS</span>
+        </div>
+        <div class="diff-header-cell">
+          <span>Modified</span>
+          <span class="preview-stats"
+                id="modifiedStats">0 WORDS | 0 CHARS</span>
+        </div>
       </div>
-      <div class="diff-body" id="diffBody">
-        <div class="diff-panel" id="leftPanel"></div>
-        <div class="diff-panel" id="rightPanel"></div>
+      <div class="diff-body"
+           id="diffBody">
+        <div class="diff-panel"
+             id="leftPanel"></div>
+        <div class="diff-panel"
+             id="rightPanel"></div>
       </div>
     </div>
 
-    <div class="empty-state" id="emptyState">
+    <div class="empty-state"
+         id="emptyState">
       <div class="empty-state-icon">[_]</div>
       <div class="empty-state-text">Enter text to compare</div>
       <div class="keyboard-hint">Changes compare automatically</div>
@@ -373,6 +405,8 @@
     const emptyState = document.getElementById('emptyState');
     const leftPanel = document.getElementById('leftPanel');
     const rightPanel = document.getElementById('rightPanel');
+    const originalStatsEl = document.getElementById('originalStats');
+    const modifiedStatsEl = document.getElementById('modifiedStats');
     const addedCountEl = document.getElementById('addedCount');
     const deletedCountEl = document.getElementById('deletedCount');
     const changedCountEl = document.getElementById('changedCount');
@@ -488,9 +522,24 @@
       changedCountEl.textContent = `~${changed}`;
     }
 
+    function getTextStats(text) {
+      const normalized = text.trim();
+      const words = normalized ? normalized.split(/\s+/).length : 0;
+      const chars = text.length;
+      return { words, chars };
+    }
+
+    function updatePreviewStats(original, modified) {
+      const originalStats = getTextStats(original);
+      const modifiedStats = getTextStats(modified);
+      originalStatsEl.textContent = `${originalStats.words} WORDS | ${originalStats.chars} CHARS`;
+      modifiedStatsEl.textContent = `${modifiedStats.words} WORDS | ${modifiedStats.chars} CHARS`;
+    }
+
     function compare() {
       const original = originalTextarea.value;
       const modified = modifiedTextarea.value;
+      updatePreviewStats(original, modified);
 
       if (!original && !modified) {
         diffContainer.classList.remove('visible');
@@ -516,6 +565,7 @@
     function clear() {
       originalTextarea.value = '';
       modifiedTextarea.value = '';
+      updatePreviewStats('', '');
       diffContainer.classList.remove('visible');
       emptyState.style.display = 'flex';
       leftPanel.innerHTML = '';
