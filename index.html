@@ -19,7 +19,7 @@
     }
 
     body {
-      font-family: 'Courier New', Courier, monospace;
+      font-family: monospace;
       background: #fff;
       color: #000;
     }
@@ -77,6 +77,87 @@
 
     .btn-small:focus {
       outline: none;
+    }
+
+    .btn-fullscreen {
+      padding: 4px 10px;
+      margin-left: 12px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn-fullscreen:hover {
+      color: #ccc;
+    }
+
+    .btn-fullscreen:focus {
+      outline: none;
+    }
+
+    .fullscreen-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100dvw;
+      height: 100dvh;
+      background: #fff;
+      z-index: 1000;
+      flex-direction: column;
+    }
+
+    .fullscreen-modal.visible {
+      display: flex;
+    }
+
+    .fullscreen-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: #000;
+      color: #fff;
+      border-bottom: 4px solid #000;
+    }
+
+    .btn-close {
+      padding: 8px 16px;
+      border: 2px solid #fff;
+      background: #000;
+      color: #fff;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    .btn-close:hover {
+      background: #fff;
+      color: #000;
+    }
+
+    .fullscreen-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .fullscreen-modal .diff-panel {
+      overflow: auto;
+      min-height: 0;
+      border-right: 4px solid #000;
+    }
+
+    .fullscreen-modal .diff-panel:last-child {
+      border-right: none;
     }
 
     .btn {
@@ -139,7 +220,7 @@
       width: 100%;
       padding: 20px;
       border: none;
-      font-family: 'Courier New', Courier, monospace;
+      font-family: monospace;
       font-size: 14px;
       line-height: 1.6;
       resize: none;
@@ -443,6 +524,9 @@
           <span>Modified</span>
           <span class="preview-stats"
                 id="modifiedStats">0 WORDS | 0 CHARS</span>
+          <button class="btn-fullscreen"
+                  id="fullscreenBtn"
+                  title="Full Screen">⛶</button>
         </div>
       </div>
       <div class="diff-body"
@@ -451,6 +535,21 @@
              id="leftPanel"></div>
         <div class="diff-panel"
              id="rightPanel"></div>
+      </div>
+    </div>
+
+    <div class="fullscreen-modal"
+         id="fullscreenModal">
+      <div class="fullscreen-header">
+        <span>Diff Comparison</span>
+        <button class="btn-close"
+                id="closeFullscreenBtn">✕ Exit Full Screen</button>
+      </div>
+      <div class="fullscreen-body">
+        <div class="diff-panel"
+             id="fullscreenLeftPanel"></div>
+        <div class="diff-panel"
+             id="fullscreenRightPanel"></div>
       </div>
     </div>
 
@@ -472,6 +571,11 @@
     const emptyState = document.getElementById('emptyState');
     const leftPanel = document.getElementById('leftPanel');
     const rightPanel = document.getElementById('rightPanel');
+    const fullscreenModal = document.getElementById('fullscreenModal');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const closeFullscreenBtn = document.getElementById('closeFullscreenBtn');
+    const fullscreenLeftPanel = document.getElementById('fullscreenLeftPanel');
+    const fullscreenRightPanel = document.getElementById('fullscreenRightPanel');
     const originalStatsEl = document.getElementById('originalStats');
     const modifiedStatsEl = document.getElementById('modifiedStats');
     const addedCountEl = document.getElementById('addedCount');
@@ -570,19 +674,24 @@
     }
 
     function renderDiff(leftLines, rightLines, added, deleted, changed) {
-      leftPanel.innerHTML = leftLines.map(line => `
+      const leftHtml = leftLines.map(line => `
         <div class="diff-line ${line.type}">
           <span class="line-number">${line.num}</span>
           <span class="line-content">${line.html}</span>
         </div>
       `).join('');
 
-      rightPanel.innerHTML = rightLines.map(line => `
+      const rightHtml = rightLines.map(line => `
         <div class="diff-line ${line.type}">
           <span class="line-number">${line.num}</span>
           <span class="line-content">${line.html}</span>
         </div>
       `).join('');
+
+      leftPanel.innerHTML = leftHtml;
+      rightPanel.innerHTML = rightHtml;
+      fullscreenLeftPanel.innerHTML = leftHtml;
+      fullscreenRightPanel.innerHTML = rightHtml;
 
       addedCountEl.textContent = `+${added}`;
       deletedCountEl.textContent = `-${deleted}`;
@@ -637,6 +746,8 @@
       emptyState.style.display = 'flex';
       leftPanel.innerHTML = '';
       rightPanel.innerHTML = '';
+      fullscreenLeftPanel.innerHTML = '';
+      fullscreenRightPanel.innerHTML = '';
       addedCountEl.textContent = '+0';
       deletedCountEl.textContent = '-0';
       changedCountEl.textContent = '~0';
@@ -646,27 +757,35 @@
       target.scrollTop = source.scrollTop;
     }
 
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => {
-          copyBtn.textContent = 'Copy';
-        }, 1500);
-      });
+    function openFullscreen() {
+      if (leftPanel.innerHTML || rightPanel.innerHTML) {
+        fullscreenModal.classList.add('visible');
+      }
+    }
+
+    function closeFullscreen() {
+      fullscreenModal.classList.remove('visible');
     }
 
     originalTextarea.addEventListener('input', debouncedCompare);
     modifiedTextarea.addEventListener('input', debouncedCompare);
     clearBtn.addEventListener('click', clear);
     copyBtn.addEventListener('click', () => copyToClipboard(modifiedTextarea.value));
+    fullscreenBtn.addEventListener('click', openFullscreen);
+    closeFullscreenBtn.addEventListener('click', closeFullscreen);
 
     leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel));
     rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel));
+    fullscreenLeftPanel.addEventListener('scroll', () => syncScroll(fullscreenLeftPanel, fullscreenRightPanel));
+    fullscreenRightPanel.addEventListener('scroll', () => syncScroll(fullscreenRightPanel, fullscreenLeftPanel));
 
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         clearTimeout(debounceTimer);
         compare();
+      }
+      if (e.key === 'Escape' && fullscreenModal.classList.contains('visible')) {
+        closeFullscreen();
       }
     });
   </script>
