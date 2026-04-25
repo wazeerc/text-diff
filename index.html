@@ -12,28 +12,35 @@
       padding: 0;
     }
 
+    html, body {
+      height: 100dvh;
+      width: 100dvw;
+      overflow: hidden;
+    }
+
     body {
       font-family: 'Courier New', Courier, monospace;
       background: #fff;
       color: #000;
-      min-height: 100vh;
-      border: 4px solid #000;
     }
 
     .container {
-      max-width: 1600px;
-      margin: 0 auto;
-      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      width: 100dvw;
+      overflow: hidden;
     }
 
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 20px 24px;
+      padding: 16px 24px;
       background: #000;
       color: #fff;
       border-bottom: 4px solid #000;
+      flex-shrink: 0;
     }
 
     h1 {
@@ -46,6 +53,30 @@
     .header-actions {
       display: flex;
       gap: 12px;
+    }
+
+    .btn-small {
+      padding: 0;
+      margin-left: 12px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #fff;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .btn-small:hover {
+      color: #ccc;
+    }
+
+    .btn-small:focus {
+      outline: none;
     }
 
     .btn {
@@ -74,12 +105,14 @@
     .input-section {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      border-bottom: 4px solid #000;
+      flex: 1;
+      min-height: 0;
     }
 
     .input-group {
       display: flex;
       flex-direction: column;
+      min-height: 0;
       border-right: 4px solid #000;
     }
 
@@ -88,6 +121,9 @@
     }
 
     .input-group label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       padding: 16px 24px;
       font-size: 14px;
       font-weight: 900;
@@ -99,14 +135,14 @@
     }
 
     .input-group textarea {
+      flex: 1;
       width: 100%;
-      min-height: 200px;
       padding: 20px;
       border: none;
       font-family: 'Courier New', Courier, monospace;
       font-size: 14px;
       line-height: 1.6;
-      resize: vertical;
+      resize: none;
       background: #fff;
     }
 
@@ -124,7 +160,7 @@
       justify-content: center;
       align-items: center;
       gap: 24px;
-      padding: 16px 24px;
+      padding: 12px 24px;
       background: #000;
       color: #fff;
       border-bottom: 4px solid #000;
@@ -132,6 +168,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 2px;
+      flex-shrink: 0;
     }
 
     .status-item {
@@ -154,11 +191,14 @@
 
     .diff-container {
       display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
       border-bottom: 4px solid #000;
     }
 
     .diff-container.visible {
-      display: block;
+      display: flex;
     }
 
     .diff-header {
@@ -166,6 +206,7 @@
       grid-template-columns: 1fr 1fr;
       background: #000;
       color: #fff;
+      flex-shrink: 0;
     }
 
     .diff-header-cell {
@@ -192,22 +233,26 @@
       white-space: nowrap;
     }
 
-    .diff-body {
+.diff-body {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      max-height: 600px;
-      overflow: auto;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .diff-panel {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 13px;
-      line-height: 1.7;
       overflow: auto;
+      min-height: 0;
+      border-right: 4px solid #000;
     }
 
     .diff-panel:first-child {
       border-right: 4px solid #000;
+    }
+
+    .diff-panel:last-child {
+      border-right: none;
     }
 
     .diff-line {
@@ -281,6 +326,8 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      flex: 1;
+      min-height: 0;
       padding: 80px 20px;
       text-align: center;
       border-bottom: 4px solid #000;
@@ -308,17 +355,32 @@
     }
 
     @media (max-width: 900px) {
+      body {
+        height: 100dvh;
+        width: 100dvw;
+      }
+
+      .container {
+        height: 100dvh;
+        width: 100dvw;
+      }
+
       .input-section {
         grid-template-columns: 1fr;
       }
 
       .input-group {
+        flex: 1;
+        min-height: 0;
         border-right: none;
         border-bottom: 4px solid #000;
       }
 
       .diff-body {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
       }
 
       .diff-panel:first-child {
@@ -345,7 +407,11 @@
                   placeholder="Paste original text..."></textarea>
       </div>
       <div class="input-group">
-        <label for="modified">Modified</label>
+        <label for="modified">
+          Modified
+          <button class="btn-small"
+                  id="copyBtn">Copy</button>
+        </label>
         <textarea id="modified"
                   placeholder="Paste modified text..."></textarea>
       </div>
@@ -401,6 +467,7 @@
     const originalTextarea = document.getElementById('original');
     const modifiedTextarea = document.getElementById('modified');
     const clearBtn = document.getElementById('clearBtn');
+    const copyBtn = document.getElementById('copyBtn');
     const diffContainer = document.getElementById('diffContainer');
     const emptyState = document.getElementById('emptyState');
     const leftPanel = document.getElementById('leftPanel');
@@ -577,12 +644,21 @@
 
     function syncScroll(source, target) {
       target.scrollTop = source.scrollTop;
-      target.scrollLeft = source.scrollLeft;
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.textContent = 'Copy';
+        }, 1500);
+      });
     }
 
     originalTextarea.addEventListener('input', debouncedCompare);
     modifiedTextarea.addEventListener('input', debouncedCompare);
     clearBtn.addEventListener('click', clear);
+    copyBtn.addEventListener('click', () => copyToClipboard(modifiedTextarea.value));
 
     leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel));
     rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel));
